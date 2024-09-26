@@ -1,23 +1,36 @@
-function NhanVien(
-  _taiKhoan,
-  _hoVaTen,
-  _email,
-  _matKhau,
-  _ngayLam,
-  _luongCB,
-  _chucVu,
-  _gioLam,
-  _tongLuong,
-  _loaiNV
-) {
-  this.taiKhoan = _taiKhoan;
-  this.hoVaTen = _hoVaTen;
-  this.email = _email;
-  this.matKhau = _matKhau;
-  this.ngayLam = _ngayLam;
-  this.luongCB = _luongCB;
-  this.chucVu = _chucVu;
-  this.gioLam = _gioLam;
-  this.tongLuong = tinhTongLuong(this.chucVu, this.luongCB) * this.gioLam;
-  this.loaiNV = xepLoai(this.gioLam);
+class NhanVien {
+  tknv = '';
+  name = '';
+  email = '';
+  password = '';
+  datepicker = '';
+  luongCB = '';
+  chucvu = '';
+  gioLam = '';
+  xepLoai = '';
+
+  tinhTongLuong = function () {
+    switch (this.chucvu) {
+      case 'Sếp':
+        return this.luongCB * 3;
+      case 'Trưởng Phòng':
+        return this.luongCB * 2;
+      case 'Nhân Viên':
+        return this.luongCB;
+      default:
+        return 0;
+    }
+  };
+  tinhXepLoai = function () {
+    if (this.gioLam >= 192) {
+      this.xepLoai = 'Xuất sắc';
+    } else if (this.gioLam >= 176) {
+      this.xepLoai = 'Giỏi';
+    } else if (this.gioLam >= 160) {
+      this.xepLoai = 'Khá';
+    } else {
+      this.xepLoai = 'Trung bình';
+    }
+    return this.xepLoai;
+  };
 }

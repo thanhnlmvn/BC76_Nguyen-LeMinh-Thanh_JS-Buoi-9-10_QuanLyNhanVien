@@ -1,160 +1,182 @@
-// Hàm xóa nhân viên
-function xoaNhanVien(taiKhoan) {
-  let index = DSNV.findIndex(function (nv) {
-    return nv.taiKhoan == taiKhoan;
-  });
-  DSNV.splice(index, 1);
-  let dataJson = JSON.stringify(DSNV);
-  localStorage.setItem('DSNV_JSON', dataJson);
-  renderDSNV(DSNV);
-}
-
-// hàm hiển thị thông tin nhân viên
-function hienThiThongTinNV(data) {
-  document.getElementById('tknv').value = data.taiKhoan;
-  document.getElementById('name').value = data.hoVaTen;
-  document.getElementById('email').value = data.email;
-  document.getElementById('password').value = data.matKhau;
-  document.getElementById('datepicker').value = data.ngayLam;
-  document.getElementById('luongCB').value = data.luongCB;
-  document.getElementById('chucvu').value = data.chucVu;
-  document.getElementById('gioLam').value = data.gioLam;
-}
-
-// Hàm tính tổng lương cho nhân viên
-function tinhTongLuong(chucVu, luongCB) {
-  switch (chucVu) {
-    case 'Sếp':
-      return luongCB * 3;
-    case 'Trưởng phòng':
-      return luongCB * 2;
-    case 'Nhân viên':
-      return luongCB;
-    default:
-      return 0;
+let arrNhanVien = [];
+document.getElementById('formQLNV').onsubmit = function (event) {
+  event.preventDefault();
+  let nhanVien = getValueForm();
+  if (!nhanVien) {
+    return;
   }
-}
-// Hàm xếp loại nhân viên
-function xepLoai(gioLam) {
-  if (gioLam >= 192) return 'Xuất sắc';
-  if (gioLam >= 176) return 'Giỏi';
-  if (gioLam >= 160) return 'Khá';
-  return 'Trung bình';
-}
+  arrNhanVien.push(nhanVien);
+  setLocalStorage('arrNhanVien', arrNhanVien);
+  readerDataNhanVien();
 
-let DSNV = [];
+  // Reset
+  // trỏ tới thẻ form đang chạy onsubmit
+  event.target.reset();
+};
 
-let dataJson = localStorage.getItem('DSNV_JSON');
-if (dataJson !== null) {
-  let dataArray = JSON.parse(dataJson);
-  DSNV = dataArray.map(function (item) {
-    let nv = new NhanVien(
-      item.taiKhoan,
-      item.hoVaTen,
-      item.email,
-      item.matKhau,
-      item.ngayLam,
-      item.luongCB,
-      item.chucVu,
-      item.gioLam
-    );
-    return nv;
-  });
-  DSNV;
-  renderDSNV(DSNV);
-}
+// -------- Get value form ---------
+function getValueForm() {
+  let arrField = document.querySelectorAll('#formQLNV input,#formQLNV select');
+  let nhanVien = new NhanVien();
+  let isValid = true;
+  for (let field of arrField) {
+    let { value, id } = field;
+    console.log(value);
+    nhanVien[id] = value;
 
-// hàm lấy thông tin
-function layThongTin() {
-  let taiKhoan = document.getElementById('tknv').value;
-  let hoVaTen = document.getElementById('name').value;
-  let email = document.getElementById('email').value;
-  let matKhau = document.getElementById('password').value;
-  let ngayLam = document.getElementById('datepicker').value;
-  let luongCB = document.getElementById('luongCB').value;
-  let chucVu = document.getElementById('chucvu').value;
-  let gioLam = document.getElementById('gioLam').value;
-  let nv = new NhanVien(
-    taiKhoan,
-    hoVaTen,
-    email,
-    matKhau,
-    ngayLam,
-    luongCB,
-    chucVu,
-    gioLam
-  );
-  return nv;
-}
-
-// Hàm hiển thị nhân viên
-function renderDSNV(dsnv) {
-  let contentHTML = '';
-  for (let i = 0; i < dsnv.length; i++) {
-    nv = dsnv[i];
-    let trString = `<tr>
-          <td>${nv.taiKhoan}</td>
-          <td>${nv.hoVaTen}</td>
-          <td>${nv.email}</td>
-          <td>${nv.ngayLam}</td>
-          <td>${nv.chucVu}</td>
-          <td>${nv.tongLuong}</td>
-          <td>${nv.loaiNV}</td>
-          <td><button class="btn btn-danger" onclick="xoaNhanVien('${nv.taiKhoan}')">Xóa</button><button class="btn btn-success" onclick="suaNV('${nv.taiKhoan}')">Cập nhật</button></td>
-      </tr>`;
-    contentHTML += trString;
+    switch (id) {
+      case 'tknv':
+        if (!validateTKNV(value)) {
+          alert('Tài khoản phải từ 4-6 ký số và không để trống.');
+          isValid = false;
+        }
+        break;
+      case 'name':
+        if (!validateName(value)) {
+          alert('Tên nhân viên phải là chữ và không để trống.');
+          isValid = false;
+        }
+        break;
+      case 'email':
+        if (!validateEmail(value)) {
+          alert('Email không hợp lệ hoặc không để trống.');
+          isValid = false;
+        }
+        break;
+      case 'password':
+        if (!validatePassword(value)) {
+          alert(
+            'Mật khẩu phải từ 6-10 ký tự, chứa ít nhất 1 số, 1 chữ hoa và 1 ký tự đặc biệt.'
+          );
+          isValid = false;
+        }
+        break;
+      case 'datepicker':
+        if (!validateDate(value)) {
+          alert('Ngày làm không để trống và phải theo định dạng mm/dd/yyyy.');
+          isValid = false;
+        }
+        break;
+      case 'luongCB':
+        if (!validateLuongCB(value)) {
+          alert(
+            'Lương cơ bản phải từ 1,000,000 đến 20,000,000 và không để trống.'
+          );
+          isValid = false;
+        }
+        break;
+      case 'chucvu':
+        if (!validateChucVu(value)) {
+          alert('Chức vụ phải chọn hợp lệ (Sếp, Trưởng Phòng, Nhân Viên).');
+          isValid = false;
+        }
+        break;
+      case 'gioLam':
+        if (!validateGioLam(value)) {
+          alert(
+            'Số giờ làm trong tháng phải từ 80 - 200 giờ và không để trống.'
+          );
+          isValid = false;
+        }
+        break;
+    }
   }
-  document.getElementById('tableDanhSach').innerHTML = contentHTML;
+  nhanVien.tinhXepLoai();
+
+  return isValid ? nhanVien : null;
 }
 
-document.getElementById('btnThemNV').onclick = function themNV() {
-  let nhanVien = layThongTin();
-  if (kiemTraHopLe()) {
-    DSNV.push(nhanVien);
-    let dataJson = JSON.stringify(DSNV);
-    localStorage.setItem('DSNV_JSON', dataJson);
-    renderDSNV(DSNV);
-    alert('thêm thành công');
-  } else {
-    alert('vui lòng nhập lại');
+function setLocalStorage(key, value) {
+  let dataString = JSON.stringify(value);
+  localStorage.setItem(key, dataString);
+}
+
+function getLocalStorage(key) {
+  let dataLocal = localStorage.getItem(key);
+  return dataLocal ? JSON.parse(dataLocal) : null;
+}
+
+window.onload = function () {
+  let dataLocal = getLocalStorage('arrNhanVien');
+  if (dataLocal) {
+    arrNhanVien = dataLocal;
+    readerDataNhanVien();
   }
 };
 
-// hàm sửa NV
-function suaNV(taiKhoan) {
-  let index = DSNV.findIndex(function (item) {
-    return item.taiKhoan == taiKhoan;
-  });
-  let nv = DSNV[index];
-  hienThiThongTinNV(nv);
-  document.getElementById('tknv').disabled = true;
+function readerDataNhanVien(arr = arrNhanVien) {
+  let content = '';
+
+  for (let nhanVien of arr) {
+    let newNhanVien = new NhanVien();
+    Object.assign(newNhanVien, nhanVien);
+    let { tknv, name, email, datepicker, chucvu } = newNhanVien;
+    content += `
+    <tr>
+    <td>${tknv}</td>
+    <td>${name}</td>
+    <td>${email}</td>
+    <td>${datepicker}</td>
+    <td>${chucvu}</td>
+    <td>${newNhanVien.tinhTongLuong()}</td> 
+    <td>${newNhanVien.tinhXepLoai()}</td> 
+    <td>
+    <button onclick="deleteNhanVien('${tknv}')" class="btn btn-danger">Xóa</button>
+    <button onclick="getInfoNhanVien('${tknv}')" class="btn btn-warning" data-toggle="modal" data-target="#myModal">Sửa</button>
+    </td>
+    </tr>
+    `;
+  }
+  document.getElementById('tableDanhSach').innerHTML = content;
 }
 
-function capNhatNV() {
-  let nv = layThongTin();
-  let index = DSNV.findIndex(function (item) {
-    return item.taiKhoan == nv.taiKhoan;
-  });
-  if (kiemTraHopLe()) {
-    DSNV[index] = nv;
-    let dataJson = JSON.stringify(DSNV);
-    localStorage.setItem('DSNV_JSON', dataJson);
-    renderDSNV(DSNV);
-    alert('cập nhật thành công');
-  } else {
-    alert('vui lòng nhập lại');
+function deleteNhanVien(maNV) {
+  let index = arrNhanVien.findIndex((item, i) => item.tknv == maNV); // -1
+  if (index != -1) {
+    arrNhanVien.splice(index, 1);
+    readerDataNhanVien();
+    setLocalStorage('arrNhanVien', arrNhanVien);
   }
 }
 
-document.getElementById('btnTimNV').onclick = function () {
-  let loaiNhanVienCanTim = document.getElementById('searchName').value;
-  console.log('🚀 [ loaiNhanVienCanTim:', loaiNhanVienCanTim);
-  let danhSachNhanVienCanTim = DSNV.filter(function (nvCanTim) {
-    return nvCanTim.loaiNV == loaiNhanVienCanTim;
+function getInfoNhanVien(maNV) {
+  // console.log(maNV);
+  let nhanVien = arrNhanVien.find((item, index) => item.tknv == maNV); //
+  if (nhanVien) {
+    let arrField = document.querySelectorAll('form input, form select');
+    for (let field of arrField) {
+      // field đại diện cho các input và select tìm kiếm được trong form
+      field.value = nhanVien[field.id];
+      if (field.id == 'tknv') {
+        field.readOnly = true;
+      }
+    }
+  }
+}
+
+document.getElementById('btnCapNhat').onclick = function () {
+  let nhanVien = getValueForm();
+  if (nhanVien) {
+    let index = arrNhanVien.findIndex(
+      (item, index) => item.tknv == nhanVien.tknv
+    );
+    if (index != -1) {
+      arrNhanVien[index] = nhanVien;
+      readerDataNhanVien();
+      setLocalStorage('arrNhanVien', arrNhanVien);
+      document.getElementById('tknv').readOnly = false;
+      document.getElementById('formQLNV').reset();
+    }
+  }
+};
+
+document.getElementById('searchName').oninput = function (event) {
+  let keyWord = event.target.value.trim().toLowerCase();
+  let newKeyWord = removeVietnameseTones(keyWord);
+
+  let arrSearch = arrNhanVien.filter((item, index) => {
+    let newTenSv = removeVietnameseTones(item.xepLoai.trim().toLowerCase());
+    return newTenSv.includes(newKeyWord);
   });
-  console.log(
-    '🚀 [ danhSachNhanVienCanTim [ danhSachNhanVienCanTim:',
-    danhSachNhanVienCanTim
-  );
-  renderDSNV(danhSachNhanVienCanTim);
+  readerDataNhanVien(arrSearch);
 };
